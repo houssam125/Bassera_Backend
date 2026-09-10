@@ -13,10 +13,10 @@ services:
     region: oregon
     plan: free
     branch: main
-    # --include=dev forces devDependencies (typescript, prisma, ts-node) to install
-    # even though NODE_ENV=production — otherwise `npm run build` fails with
-    # "prisma: not found" / "tsc: not found" and dist/ is never produced.
-    buildCommand: npm install --include=dev && npm run build
+    # `postinstall` (prisma generate && tsc) builds dist/ during `npm install`, so
+    # this works even if the dashboard start command is a bare `node dist/index.js`.
+    # `.npmrc` (production=false) keeps devDependencies installable under NODE_ENV=production.
+    buildCommand: npm install
     startCommand: npm run start:prod
     healthCheckPath: /api/health
     autoDeploy: true

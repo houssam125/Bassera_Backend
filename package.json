@@ -19,7 +19,7 @@
     "prisma:studio": "prisma studio",
     "db:seed": "ts-node prisma/seed.ts",
     "create-admin": "ts-node scripts/create-admin.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate && tsc"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
@@ -49,6 +49,7 @@
     "morgan": "^1.10.0",
     "multer": "^2.3.0",
     "prisma": "6.19.3",
+    "typescript": "^5.7.3",
     "zod": "^4.6.0"
   },
   "devDependencies": {
@@ -61,7 +62,6 @@
     "@types/node": "^22.10.5",
     "nodemon": "^3.1.9",
     "rimraf": "^6.0.1",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.7.3"
+    "ts-node": "^10.9.2"
   }
 }
