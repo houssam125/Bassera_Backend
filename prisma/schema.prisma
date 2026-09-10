@@ -1,0 +1,286 @@
+// Prisma schema for the Bassera backend.
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum ProjectKind {
+  social
+  software
+}
+
+/// The two sides of Bassera — used to classify a Capability.
+enum Division {
+  social
+  software
+}
+
+enum SocialPlatform {
+  instagram
+  tiktok
+  linkedin
+  youtube
+  x
+  facebook
+}
+
+enum DeliveryStatus {
+  shipped
+  in_progress
+  private_beta
+}
+
+enum Visibility {
+  draft
+  published
+}
+
+enum UserRole {
+  owner
+  admin
+  editor
+  viewer
+}
+
+enum UserStatus {
+  pending
+  active
+  suspended
+  rejected
+}
+
+/// Lifecycle of a contact-form inquiry in the dashboard.
+enum InquiryStatus {
+  new
+  read
+  replied
+  archived
+}
+
+// ---------------------------------------------------------------------------
+// Models
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String     @id @default(cuid())
+  name          String
+  email         String     @unique
+  passwordHash  String
+  role          UserRole   @default(editor)
+  status        UserStatus @default(pending)
+  requestedRole UserRole   @default(editor)
+  approvedById  String?
+  approvedBy    User?      @relation("UserApprovals", fields: [approvedById], references: [id])
+  approvals     User[]     @relation("UserApprovals")
+  failedLogins  Int        @default(0)
+  lockedUntil   DateTime?
+  lastLoginAt   DateTime?
+
+  // --- public team profile ---
+  title       String? // job title, e.g. "Website Developer", "Product Designer"
+  bio         String? // short description shown on the team page
+  avatarUrl   String? // profile image URL (upload via POST /api/admin/media)
+  profileTags String[] // skills / focus areas, e.g. ["React", "Branding"]
+  showOnTeam  Boolean  @default(true) // include in GET /api/team
+  teamOrder   Int      @default(0) // manual ordering on the team page (ascending)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sessions  Session[]
+
+  @@index([status])
+  @@index([role])
+  @@index([showOnTeam, teamOrder])
+}
+
+model Session {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokenHash String   @unique
+  userAgent        String?
+  ip               String?
+  expiresAt        DateTime
+  createdAt        DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Project {
+  id            String     @id @default(cuid())
+  kind          ProjectKind
+  slug          String     @unique
+  title         String
+  client        String
+  summary       String
+  coverImageUrl String
+  year          Int
+  tags          String[]
+  featured      Boolean    @default(false)
+  visibility    Visibility @default(draft)
+  sortOrder     Int        @default(0)
+
+  // social
+  platform     SocialPlatform?
+  handle       String?
+  campaignType String?
+  metrics      Json? // [{ label, value, trend }]
+  campaignUrl  String?
+
+  // software
+  projectType    String?
+  description    String?
+  stack          String[]
+  deliveryStatus DeliveryStatus?
+  liveUrl        String?
+  caseStudyUrl   String?
+  repoUrl        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([kind, visibility, sortOrder])
+  @@index([featured])
+}
+
+/// A service card in the homepage "Two Divisions" section.
+/// `icon` is a preset key resolved by the frontend icon set (see /api/capabilities/meta).
+model Capability {
+  id          String     @id @default(cuid())
+  division    Division
+  slug        String     @unique
+  name        String
+  description String
+  tags        String[]
+  icon        String
+  visibility  Visibility @default(draft)
+  sortOrder   Int        @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([division, visibility, sortOrder])
+}
+
+/// A company shown in the homepage "Trusted by growing companies" strip.
+model Client {
+  id         String     @id @default(cuid())
+  slug       String     @unique
+  name       String
+  logoUrl    String
+  websiteUrl String?
+  visibility Visibility @default(draft)
+  sortOrder  Int        @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([visibility, sortOrder])
+}
+
+/// A submission from the public "Start a Project" / contact form.
+model Inquiry {
+  id        String        @id @default(cuid())
+  name      String
+  email     String
+  company   String?
+  service   String?
+  budget    String?
+  message   String
+  status    InquiryStatus @default(new)
+  source    String        @default("contact-form")
+  ip        String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+}
+
+/// Editable homepage copy — a single row (id = "singleton").
+model SiteContent {
+  id String @id
+
+  heroEyebrow           String @default("Creative Digital Agency")
+  heroTitleLead         String @default("We Build Brands")
+  heroTitleHighlight    String @default("That Matter")
+  heroTitleTail         String @default("in the Digital World")
+  heroSubtext           String @default("Bassera crafts premium digital experiences — from brand identity to immersive web & mobile platforms — for visionary businesses.")
+  heroPrimaryCtaLabel   String @default("View Our Work")
+  heroSecondaryCtaLabel String @default("Start a Project")
+
+  contactLocation String @default("Algiers, Algeria")
+  contactEmail    String @default("hello@bassera.agency")
+  contactPhone    String @default("+213 (0) 555 123 456")
+
+  facebookUrl  String?
+  instagramUrl String?
+
+  updatedAt DateTime @updatedAt
+}
+
+/// A quote in the homepage "What Our Partners Say" section.
+model Testimonial {
+  id          String     @id @default(cuid())
+  quote       String
+  authorName  String
+  authorTitle String? // e.g. "CEO, Nexara"
+  company     String?
+  avatarUrl   String?
+  visibility  Visibility @default(draft)
+  sortOrder   Int        @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([visibility, sortOrder])
+}
+
+/// A step in the homepage "How We Work" roadmap.
+model ProcessStep {
+  id          String     @id @default(cuid())
+  step        String // display label, e.g. "01"
+  title       String
+  description String
+  icon        String     @default("search") // preset key resolved by the frontend
+  visibility  Visibility @default(draft)
+  sortOrder   Int        @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([visibility, sortOrder])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  targetType String?
+  targetId   String?
+  meta       Json?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([action])
+}
+
+/// Written once on every process start. Serves as a deploy marker and proves
+/// the database connection + migration pipeline work end to end.
+model HealthCheck {
+  id        String   @id @default(uuid())
+  checkedAt DateTime @default(now())
+
+  @@map("health_checks")
+}

@@ -1,0 +1,55 @@
+# Render Blueprint for the Bassera backend.
+# Deploy: push this repo to GitHub, then in Render → "New +" → "Blueprint" and
+# point it at the repo. Fill the env vars marked `sync: false` in the dashboard.
+#
+# NOTE: on the free plan the web service sleeps after ~15 min idle (first request
+# then takes ~50s) and the filesystem is EPHEMERAL — so MEDIA_DRIVER=local loses
+# uploads on every redeploy/restart. Switch to S3 or Cloudinary for real media.
+
+services:
+  - type: web
+    name: bassera-backend
+    runtime: node
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "4000"
+      # PostgreSQL — paste the *Internal* Database URL of your Render Postgres
+      # (host: dpg-...-a, no ?sslmode). Do NOT commit it.
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_TTL
+        value: "900"
+      - key: REFRESH_TOKEN_TTL
+        value: "2592000"
+      - key: REFRESH_COOKIE_NAME
+        value: bassera_rt
+      - key: BCRYPT_COST
+        value: "12"
+      # The first account registered with this email becomes owner/active.
+      - key: BOOTSTRAP_ADMIN_EMAIL
+        sync: false
+      # Comma-separated allowed origins — your live frontend.
+      - key: CORS_ORIGIN
+        value: https://bassera.agency
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "900000"
+      - key: RATE_LIMIT_MAX
+        value: "300"
+      - key: MEDIA_DRIVER
+        value: local
+      - key: MEDIA_MAX_BYTES
+        value: "5242880"
+      # e.g. https://bassera-backend.onrender.com/uploads
+      - key: MEDIA_PUBLIC_BASE_URL
+        sync: false
