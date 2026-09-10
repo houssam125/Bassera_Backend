@@ -8,7 +8,11 @@ type MediaDriver = 'local' | 's3' | 'cloudinary'
 function required(key: string, fallback?: string): string {
   const value = process.env[key] ?? fallback
   if (value === undefined) {
-    throw new Error(`Missing required environment variable: ${key}`)
+    throw new Error(
+      `Missing required environment variable: ${key}. ` +
+        `Set it in your host's environment settings (on Render: your web service → ` +
+        `Environment → Add Environment Variable), then redeploy.`,
+    )
   }
   return value
 }
