@@ -3,7 +3,7 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 type NodeEnv = 'development' | 'production' | 'test'
-type MediaDriver = 'local' | 's3' | 'cloudinary'
+type MediaDriver = 'local' | 's3' | 'cloudinary' | 'imagekit'
 
 function required(key: string, fallback?: string): string {
   const value = process.env[key] ?? fallback
@@ -62,6 +62,13 @@ export const env = {
   mediaDriver: (optional('MEDIA_DRIVER') ?? 'local') as MediaDriver,
   mediaMaxBytes: int('MEDIA_MAX_BYTES', 5_242_880),
   mediaPublicBaseUrl: optional('MEDIA_PUBLIC_BASE_URL') ?? 'http://localhost:4000/uploads',
+
+  // ImageKit (only read when MEDIA_DRIVER=imagekit). Only the private key is
+  // actually used server-side; public key / URL endpoint are kept for future
+  // client-side upload or transformation-URL use.
+  imagekitPublicKey: optional('IMAGEKIT_PUBLIC_KEY'),
+  imagekitPrivateKey: optional('IMAGEKIT_PRIVATE_KEY'),
+  imagekitUrlEndpoint: optional('IMAGEKIT_URL_ENDPOINT'),
 }
 
 export const isProduction = env.nodeEnv === 'production'
