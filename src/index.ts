@@ -4,13 +4,28 @@ import { prisma } from './db/prisma'
 import { recordStartup } from './modules/health/health.service'
 
 async function main(): Promise<void> {
-  await prisma.$connect()
-  console.log('[bassera-backend] database connected')
-
+  let dbConnected = false
   try {
-    await recordStartup()
+    await prisma.$connect()
+    dbConnected = true
+    console.log('[bassera-backend] database connected')
   } catch (err) {
-    console.warn('[bassera-backend] could not record startup marker (migrations pending?):', err)
+    // Don't crash the whole process over a bad/missing DATABASE_URL — start the
+    // HTTP server anyway so it's reachable and /api/health reports the real
+    // problem, instead of Render just seeing an opaque crash loop.
+    console.error(
+      '[bassera-backend] database connection FAILED — starting anyway in a degraded ' +
+        'state. Fix DATABASE_URL in your host\'s environment settings and redeploy:',
+      err,
+    )
+  }
+
+  if (dbConnected) {
+    try {
+      await recordStartup()
+    } catch (err) {
+      console.warn('[bassera-backend] could not record startup marker (migrations pending?):', err)
+    }
   }
 
   const app = createApp()

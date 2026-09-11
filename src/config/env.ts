@@ -36,8 +36,12 @@ export const env = {
   nodeEnv: (process.env.NODE_ENV ?? 'development') as NodeEnv,
   port: process.env.PORT || 4000,
 
-  /** PostgreSQL connection string consumed by Prisma. */
-  databaseUrl: required('DATABASE_URL'),
+  /**
+   * PostgreSQL connection string consumed by Prisma. Deliberately NOT `required()`:
+   * a missing/bad value should degrade (server starts, /api/health reports it)
+   * rather than crash the whole process before it can even bind a port.
+   */
+  databaseUrl: optional('DATABASE_URL'),
 
   /** Allowed CORS origins, parsed from a comma-separated list. */
   corsOrigins: required('CORS_ORIGIN', 'http://localhost:5173')
