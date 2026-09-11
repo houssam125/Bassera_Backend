@@ -34,7 +34,7 @@ function int(key: string, fallback: number): number {
 
 export const env = {
   nodeEnv: (process.env.NODE_ENV ?? 'development') as NodeEnv,
-  port: int('PORT', 4000),
+  port: process.env.PORT || 4000,
 
   /** PostgreSQL connection string consumed by Prisma. */
   databaseUrl: required('DATABASE_URL'),
