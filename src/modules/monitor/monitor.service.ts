@@ -16,6 +16,9 @@ export interface MonitorReport {
   timestamp: string
   database: { status: 'up' | 'down'; latencyMs: number | null }
   memory: { rssMB: number; heapUsedMB: number }
+  /** What CORS_ORIGIN actually resolved to on THIS running instance — the
+   *  fastest way to catch a stale/misconfigured env var without dashboard access. */
+  corsOrigins: string[]
 }
 
 export async function buildMonitor(): Promise<MonitorReport> {
@@ -38,5 +41,6 @@ export async function buildMonitor(): Promise<MonitorReport> {
     timestamp: new Date().toISOString(),
     database,
     memory: { rssMB: mb(mem.rss), heapUsedMB: mb(mem.heapUsed) },
+    corsOrigins: env.corsOrigins,
   }
 }

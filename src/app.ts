@@ -21,7 +21,20 @@ export function createApp(): Application {
   app.use(helmet())
   app.use(
     cors({
-      origin: env.corsOrigins,
+      origin(origin, callback) {
+        // No Origin header (curl, server-to-server, same-origin) — allow.
+        if (!origin || env.corsOrigins.includes(origin)) {
+          callback(null, true)
+          return
+        }
+        // Logged so a misconfigured CORS_ORIGIN is a one-line grep away in the
+        // host's logs, instead of a silent "No Access-Control-Allow-Origin" in
+        // every browser that hits it.
+        console.warn(
+          `[cors] rejected origin "${origin}" — CORS_ORIGIN allows: ${env.corsOrigins.join(', ') || '(none)'}`,
+        )
+        callback(null, false)
+      },
       credentials: true,
     }),
   )
