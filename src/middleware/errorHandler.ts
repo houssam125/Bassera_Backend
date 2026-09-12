@@ -21,12 +21,20 @@ export function errorHandler(
 ): void {
   const isApiError = err instanceof ApiError
   const statusCode = isApiError ? err.statusCode : 500
-  const message =
-    isApiError || err instanceof Error ? (err as Error).message : 'Internal Server Error'
 
   if (!isApiError || statusCode >= 500) {
     console.error('[error]', err)
   }
+
+  // ApiError messages are deliberately written to be shown to the client.
+  // Anything else (bugs, Prisma/driver errors, etc.) can carry internal
+  // details — env var names, schema paths, SQL — that must never reach the
+  // public API response in production.
+  const message = isApiError
+    ? err.message
+    : !isProduction && err instanceof Error
+      ? err.message
+      : 'Internal Server Error'
 
   const body: ErrorBody = { status: 'error', message }
 
