@@ -19,23 +19,39 @@ export function createApp(): Application {
 
   // Security & parsing
   app.use(helmet())
+
+  // CORS — public marketing content (projects, capabilities, team, site
+  // content, testimonials, process, health/monitor, the contact form) is
+  // open to ANY origin, no cookies/tokens involved, so "everyone can use it"
+  // — embed it, fetch it from anywhere, no allow-listing needed.
+  //
+  // `/api/auth/*` and `/api/admin/*` are the exception: they carry the
+  // refresh cookie and bearer tokens, so browsers require Access-Control-
+  // Allow-Credentials + a specific (non-wildcard) origin. Those stay behind
+  // the CORS_ORIGIN allow-list. A single delegate (instead of two stacked
+  // `cors()` calls) avoids one policy's preflight silently overriding the
+  // other's.
   app.use(
-    cors({
-      origin(origin, callback) {
-        // No Origin header (curl, server-to-server, same-origin) — allow.
-        if (!origin || env.corsOrigins.includes(origin)) {
-          callback(null, true)
-          return
-        }
-        // Logged so a misconfigured CORS_ORIGIN is a one-line grep away in the
-        // host's logs, instead of a silent "No Access-Control-Allow-Origin" in
-        // every browser that hits it.
-        console.warn(
-          `[cors] rejected origin "${origin}" — CORS_ORIGIN allows: ${env.corsOrigins.join(', ') || '(none)'}`,
-        )
-        callback(null, false)
-      },
-      credentials: true,
+    cors((req: Request, callback) => {
+      const isRestricted = req.path.startsWith('/api/auth') || req.path.startsWith('/api/admin')
+
+      if (!isRestricted) {
+        callback(null, { origin: true, credentials: false })
+        return
+      }
+
+      const origin = req.headers.origin
+      if (!origin || env.corsOrigins.includes(origin)) {
+        callback(null, { origin: true, credentials: true })
+        return
+      }
+      // Logged so a misconfigured CORS_ORIGIN is a one-line grep away in the
+      // host's logs, instead of a silent "No Access-Control-Allow-Origin" in
+      // every browser that hits it.
+      console.warn(
+        `[cors] rejected origin "${origin}" for ${req.path} — CORS_ORIGIN allows: ${env.corsOrigins.join(', ') || '(none)'}`,
+      )
+      callback(null, { origin: false })
     }),
   )
   app.use(express.json())
