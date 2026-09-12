@@ -51,7 +51,13 @@ export function createApp(): Application {
       console.warn(
         `[cors] rejected origin "${origin}" for ${req.path} — CORS_ORIGIN allows: ${env.corsOrigins.join(', ') || '(none)'}`,
       )
-      callback(null, { origin: false })
+      // NOT `{ origin: false }` — the `cors` package's own truthiness check
+      // (`else if (corsOptions.origin)`) treats a literal `false` as "no
+      // origin option was given" and skips its preflight handling entirely,
+      // silently falling through to the route instead of responding with a
+      // clean CORS-denied preflight. An empty array is truthy (so the real
+      // origin-check logic runs) but still resolves to "not allowed".
+      callback(null, { origin: [] })
     }),
   )
   app.use(express.json())
