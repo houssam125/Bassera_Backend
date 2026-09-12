@@ -12,7 +12,7 @@ export async function listTeam(
 ): Promise<{ data: TeamMember[]; meta: { total: number } }> {
   const rows = await prisma.user.findMany({
     where: { ...VISIBLE, ...(role ? { role } : {}) },
-    orderBy: [{ teamOrder: 'asc' }, { name: 'asc' }],
+    orderBy: [{ teamOrder: 'asc' }, { name: 'asc' }, { id: 'asc' }],
   })
   return { data: rows.map(toTeamMember), meta: { total: rows.length } }
 }

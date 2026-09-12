@@ -36,7 +36,7 @@ router.get(
     const [data, total] = await Promise.all([
       prisma.auditLog.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         ...toSkipTake(params),
       }),
       prisma.auditLog.count({ where }),

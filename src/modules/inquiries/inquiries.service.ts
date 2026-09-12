@@ -25,6 +25,22 @@ export async function createInquiry(
   input: CreateInquiryInput,
   ctx: { ip?: string; userAgent?: string },
 ) {
+  // Guard against double-submits (double-click, browser retry, back-button
+  // resubmit) — the same email+message within a short window is treated as
+  // one lead, not a fresh duplicate row.
+  const DUPLICATE_WINDOW_MS = 2 * 60 * 1000
+  const recent = await prisma.inquiry.findFirst({
+    where: {
+      email: input.email,
+      message: input.message,
+      createdAt: { gte: new Date(Date.now() - DUPLICATE_WINDOW_MS) },
+    },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+  })
+  if (recent) {
+    return serializeInquiry(recent)
+  }
+
   const row = await prisma.inquiry.create({
     data: {
       name: input.name,
@@ -56,7 +72,11 @@ export async function listInquiries(
   }
 
   const [rows, total, unread] = await Promise.all([
-    prisma.inquiry.findMany({ where, orderBy: { createdAt: 'desc' }, ...toSkipTake(params) }),
+    prisma.inquiry.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      ...toSkipTake(params),
+    }),
     prisma.inquiry.count({ where }),
     prisma.inquiry.count({ where: { status: 'new' } }),
   ])

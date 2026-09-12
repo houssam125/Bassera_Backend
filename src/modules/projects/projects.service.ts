@@ -63,14 +63,17 @@ export function serializeProject(p: Project): Record<string, unknown> {
 // ---------------------------------------------------------------------------
 
 function orderFor(sort: PublicListQuery['sort']): Prisma.ProjectOrderByWithRelationInput[] {
+  // `id` is always the last tiebreaker: without one, rows tied on the other
+  // columns (e.g. several seeded/published in the same request) can shift
+  // across pages between requests and show up twice, or get skipped.
   switch (sort) {
     case '-year':
-      return [{ year: 'desc' }, { sortOrder: 'asc' }]
+      return [{ year: 'desc' }, { sortOrder: 'asc' }, { id: 'desc' }]
     case '-createdAt':
-      return [{ createdAt: 'desc' }]
+      return [{ createdAt: 'desc' }, { id: 'desc' }]
     case 'sortOrder':
     default:
-      return [{ sortOrder: 'asc' }, { createdAt: 'desc' }]
+      return [{ sortOrder: 'asc' }, { createdAt: 'desc' }, { id: 'desc' }]
   }
 }
 

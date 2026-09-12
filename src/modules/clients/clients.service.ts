@@ -58,7 +58,7 @@ export async function listClients(
   const [rows, total] = await Promise.all([
     prisma.client.findMany({
       where,
-      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }, { id: 'asc' }],
       ...toSkipTake(params),
     }),
     prisma.client.count({ where }),

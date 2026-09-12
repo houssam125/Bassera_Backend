@@ -42,7 +42,7 @@ export async function listProcessSteps(
   const [rows, total] = await Promise.all([
     prisma.processStep.findMany({
       where,
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
       ...toSkipTake(params),
     }),
     prisma.processStep.count({ where }),

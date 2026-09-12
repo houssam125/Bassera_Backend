@@ -70,7 +70,7 @@ export async function listCapabilities(
   const [rows, total] = await Promise.all([
     prisma.capability.findMany({
       where,
-      orderBy: [{ division: 'asc' }, { sortOrder: 'asc' }, { createdAt: 'asc' }],
+      orderBy: [{ division: 'asc' }, { sortOrder: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
       ...toSkipTake(params),
     }),
     prisma.capability.count({ where }),

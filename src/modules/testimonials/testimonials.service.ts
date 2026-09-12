@@ -50,7 +50,7 @@ export async function listTestimonials(
   const [rows, total] = await Promise.all([
     prisma.testimonial.findMany({
       where,
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }, { id: 'asc' }],
       ...toSkipTake(params),
     }),
     prisma.testimonial.count({ where }),

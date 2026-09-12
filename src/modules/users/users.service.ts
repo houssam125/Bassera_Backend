@@ -68,7 +68,11 @@ export async function listUsers(
 
   const params = { page: query.page, pageSize: query.pageSize }
   const [rows, total] = await Promise.all([
-    prisma.user.findMany({ where, orderBy: { createdAt: 'desc' }, ...toSkipTake(params) }),
+    prisma.user.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      ...toSkipTake(params),
+    }),
     prisma.user.count({ where }),
   ])
   return { data: rows.map(toAdminUser), meta: buildMeta(params, total) }

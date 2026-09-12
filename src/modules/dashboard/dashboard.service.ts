@@ -31,7 +31,7 @@ export async function buildOverview(): Promise<Record<string, unknown>> {
     prisma.user.groupBy({ by: ['status'], _count: { _all: true } }),
     prisma.user.count(),
     prisma.project.findMany({
-      orderBy: { updatedAt: 'desc' },
+      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
       take: 5,
       select: { id: true, title: true, kind: true, visibility: true, updatedAt: true },
     }),
