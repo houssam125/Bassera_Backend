@@ -32,16 +32,36 @@ function int(key: string, fallback: number): number {
   return parsed
 }
 
+/**
+ * PostgreSQL connection string for Prisma. Prefers a single `DATABASE_URL`
+ * when given (unchanged behaviour); otherwise builds one from the discrete
+ * DB_USER/DB_HOST/DB_NAME/DB_PASSWORD/DB_PORT parts — the same shape used
+ * elsewhere — so the host's environment settings only need five short,
+ * easy-to-verify values instead of one long combined string that's easy to
+ * mis-paste. Deliberately can resolve to `undefined`: a missing/bad value
+ * should degrade (server starts, /api/health reports it) rather than crash
+ * the whole process before it can even bind a port.
+ */
+function buildDatabaseUrl(): string | undefined {
+  const direct = optional('DATABASE_URL')
+  if (direct) return direct
+
+  const user = optional('DB_USER')
+  const host = optional('DB_HOST')
+  const name = optional('DB_NAME')
+  const password = optional('DB_PASSWORD')
+  if (!user || !host || !name || !password) return undefined
+
+  const port = optional('DB_PORT') ?? '5432'
+  const ssl = optional('DB_SSL') === 'false' ? '' : '?sslmode=require'
+  return `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${host}:${port}/${name}${ssl}`
+}
+
 export const env = {
   nodeEnv: (process.env.NODE_ENV ?? 'development') as NodeEnv,
   port: process.env.PORT || 4000,
 
-  /**
-   * PostgreSQL connection string consumed by Prisma. Deliberately NOT `required()`:
-   * a missing/bad value should degrade (server starts, /api/health reports it)
-   * rather than crash the whole process before it can even bind a port.
-   */
-  databaseUrl: optional('DATABASE_URL'),
+  databaseUrl: buildDatabaseUrl(),
 
   /** Allowed CORS origins, parsed from a comma-separated list. */
   corsOrigins: required('CORS_ORIGIN', 'http://localhost:5173')
