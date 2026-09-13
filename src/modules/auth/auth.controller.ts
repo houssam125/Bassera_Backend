@@ -21,8 +21,14 @@ function ctxOf(req: Request): RequestContext {
 function refreshCookieOptions(): CookieOptions {
   return {
     httpOnly: true,
+    // The frontend (Vercel) and backend (Render) are different sites, not just
+    // different origins — a `SameSite=Lax` cookie is never sent on a cross-site
+    // fetch/XHR (only on a top-level navigation), so the refresh cookie set at
+    // login could never come back on `/api/auth/refresh`. `None` requires
+    // `Secure`, which is only valid over HTTPS — fine in production, but plain
+    // `http://localhost` in dev needs `Lax` instead.
     secure: isProduction,
-    sameSite: 'lax',
+    sameSite: isProduction ? 'none' : 'lax',
     path: '/api/auth',
     maxAge: env.refreshTokenTtl * 1000,
   }
